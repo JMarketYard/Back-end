@@ -1,27 +1,37 @@
 package com.example.demo.controller.general;
 
 import com.example.demo.base.ApiResponse;
-import com.example.demo.base.status.SuccessStatus;
-import com.example.demo.domain.dto.HomeResponseDTO;
-import io.swagger.v3.oas.annotations.Operation;
+import com.example.demo.domain.dto.Payment.*;
+import com.example.demo.service.general.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/permit/pay")
 @RequiredArgsConstructor
+@RequestMapping("/api/payment")
 public class PaymentController {
 
-    @Operation(summary = "결제 api")
-    @PostMapping("")
-    public ApiResponse<HomeResponseDTO> payment(){
-        return ApiResponse.of(SuccessStatus._OK, null);
+    private final PaymentService paymentService;
+
+    @PostMapping("/ready")
+    public ApiResponse<ReadyResponse> preparePayment(@RequestBody PaymentRequest paymentRequest) {
+        return paymentService.preparePayment(paymentRequest);
     }
 
-    @Operation(summary = "결제 취소 api")
-    @DeleteMapping("")
-    public ApiResponse<HomeResponseDTO> refund(){
-        return ApiResponse.of(SuccessStatus._OK, null);
+    @GetMapping("/approve")
+    public ApiResponse<ApproveResponse> approvePayment(@RequestParam String pgToken, @RequestParam String tid) {
+        return paymentService.approvePayment(pgToken, tid);
     }
 
+    @GetMapping("/history/{userId}")
+    public ApiResponse<List<PaymentResponse>> getPaymentHistory(@PathVariable String userId) {
+        return paymentService.getPaymentHistory(userId);
+    }
+
+    @PostMapping("/cancel")
+    public ApiResponse<CancelResponse> cancelPayment(@RequestParam String tid) {
+        return paymentService.cancelPayment(tid);
+    }
 }

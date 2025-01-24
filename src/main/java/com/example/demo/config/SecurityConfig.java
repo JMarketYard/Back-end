@@ -39,6 +39,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> {
                     authorize
                             .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                            .requestMatchers( "http://localhost:3000/**","/api/**",  "/payment/**").permitAll()
                             .requestMatchers("/api/permit/**").permitAll()
                             .anyRequest().authenticated();
                 })
