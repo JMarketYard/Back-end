@@ -5,9 +5,12 @@ import com.example.demo.base.code.exception.CustomException;
 import com.example.demo.base.status.ErrorStatus;
 import com.example.demo.base.status.SuccessStatus;
 import com.example.demo.domain.converter.PaymentConverter;
+import com.example.demo.domain.converter.UserPaymentConverter;
 import com.example.demo.domain.dto.Payment.*;
 import com.example.demo.entity.Payment;
+import com.example.demo.entity.UserPayment;
 import com.example.demo.repository.PaymentRepository;
+import com.example.demo.repository.UserPaymentRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.general.PaymentService;
 import org.slf4j.Logger;
@@ -32,7 +35,9 @@ public class KakaoPayServiceImpl implements PaymentService {
     private static final Logger logger = LoggerFactory.getLogger(KakaoPayServiceImpl.class);
     private final RestTemplate restTemplate;
     private final PaymentRepository paymentRepository;
+    private final UserPaymentRepository userPaymentRepository;
     private final PaymentConverter paymentConverter;
+    private final UserPaymentConverter userPaymentConverter;
     private final String secretKey;
     public KakaoPayServiceImpl(
             @Value("${kakao.pay.cid}") String cid,
@@ -41,11 +46,15 @@ public class KakaoPayServiceImpl implements PaymentService {
             @Value("${kakao.pay.cancelUrl}") String cancelUrl,
             @Value("${kakao.pay.failUrl}") String failUrl,
             PaymentRepository paymentRepository,
+            UserPaymentRepository userPaymentRepository,
+            UserPaymentConverter paymentConverter,
             UserRepository userRepository
     ) {
         this.secretKey = secretKey;
         this.paymentRepository = paymentRepository;
+        this.userPaymentRepository = userPaymentRepository;
         this.restTemplate = new RestTemplate();
+        this.userPaymentConverter = new UserPaymentConverter();
         this.paymentConverter = new PaymentConverter(cid, approvalUrl, cancelUrl, failUrl, userRepository);
     }
     private HttpHeaders createHeaders() {
@@ -102,20 +111,27 @@ public class KakaoPayServiceImpl implements PaymentService {
             savePaymentEntity(payment);
         });
 
+        // 유저 티켓 수 증가 또는 유저 생성 처리
+        String userId = payment.getUserId();
+        UserPayment userPayment = userPaymentRepository.findByUserId(userId)
+                .orElseGet(() -> {
+                    // 유저가 없을 경우, UserPaymentConverter를 사용하여 새 UserPayment 생성
+                    return userPaymentConverter.createDefaultUserPayment(userId);
+                });
+
+        // 티켓 수 업데이트
+        if (!payment.getItemId().equals("배송비")) {
+            int updatedTickets = Integer.parseInt(userPayment.getUserTicket()) + payment.getAmount();
+            userPayment.setUserTicket(String.valueOf(updatedTickets));
+            userPayment.setUpdatedAt(LocalDateTime.now());
+        }
+
+        // 변경된 유저 정보 저장
+        userPaymentRepository.save(userPayment);
+
         return ApiResponse.of(SuccessStatus.PAYMENT_APPROVE_SUCCESS, approveResponse);
     }
-    @Override
-    public ApiResponse<CancelResponse> cancelPayment(String tid) {
-        Payment payment = findPaymentByTid(tid);
-        CancelResponse cancelResponse = sendRequest(
-                "https://open-api.kakaopay.com/online/v1/payment/cancel",
-                paymentConverter.toCancelParameters(payment),
-                CancelResponse.class
-        );
-        payment.setStatus("CANCELLED");
-        savePaymentEntity(payment);
-        return ApiResponse.of(SuccessStatus.PAYMENT_CANCEL_SUCCESS, cancelResponse);
-    }
+
     @Override
     public ApiResponse<List<PaymentResponse>> getPaymentHistory(String userId) {
         try {

@@ -3,6 +3,7 @@ package com.example.demo.controller.general;
 import com.example.demo.base.ApiResponse;
 import com.example.demo.domain.dto.Payment.*;
 import com.example.demo.service.general.PaymentService;
+import com.example.demo.service.general.UserPaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,6 +15,7 @@ import java.util.List;
 public class PaymentController {
 
     private final PaymentService paymentService;
+    private final UserPaymentService userPaymentService;
 
     @PostMapping("/ready")
     public ApiResponse<ReadyResponse> preparePayment(@RequestBody PaymentRequest paymentRequest) {
@@ -30,8 +32,14 @@ public class PaymentController {
         return paymentService.getPaymentHistory(userId);
     }
 
-    @PostMapping("/cancel")
-    public ApiResponse<CancelResponse> cancelPayment(@RequestParam String tid) {
-        return paymentService.cancelPayment(tid);
+    @GetMapping("/tickets/{userId}")
+    public ApiResponse<UserTicketResponse> getUserTickets(@PathVariable String userId) {
+        return userPaymentService.getUserTickets(userId);
     }
+
+    @PostMapping("/bankInfo/{userId}")
+    public ApiResponse<UserBankInfoResponse> getUserPaymentInfo(@PathVariable String userId, @RequestBody UserBankInfoRequest userBankInfoRequest) {
+        return userPaymentService.getUserPaymentInfo(userId, userBankInfoRequest);
+    }
+
 }

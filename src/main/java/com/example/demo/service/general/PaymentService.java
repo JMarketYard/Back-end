@@ -8,6 +8,5 @@ import java.util.List;
 public interface PaymentService {
     ApiResponse<ReadyResponse> preparePayment(PaymentRequest paymentRequest);
     ApiResponse<ApproveResponse> approvePayment(String pgToken, String tid);
-    ApiResponse<CancelResponse> cancelPayment(String tid);
     ApiResponse<List<PaymentResponse>> getPaymentHistory(String userId);
 }
