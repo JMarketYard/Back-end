@@ -4,15 +4,15 @@ import com.example.demo.base.ApiResponse;
 import com.example.demo.base.code.exception.CustomException;
 import com.example.demo.base.status.ErrorStatus;
 import com.example.demo.base.status.SuccessStatus;
-import com.example.demo.domain.converter.PaymentConverter;
+import com.example.demo.domain.converter.KakaoPayConverter;
 import com.example.demo.domain.converter.UserPaymentConverter;
 import com.example.demo.domain.dto.Payment.*;
-import com.example.demo.entity.Payment;
-import com.example.demo.entity.UserPayment;
+import com.example.demo.entity.base.Payment.Payment;
+import com.example.demo.entity.base.Payment.UserPayment;
 import com.example.demo.repository.PaymentRepository;
 import com.example.demo.repository.UserPaymentRepository;
 import com.example.demo.repository.UserRepository;
-import com.example.demo.service.general.PaymentService;
+import com.example.demo.service.general.KakaoPayService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,19 +24,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
-public class KakaoPayServiceImpl implements PaymentService {
+public class KakaoPayServiceImpl implements KakaoPayService {
 
     private static final Logger logger = LoggerFactory.getLogger(KakaoPayServiceImpl.class);
     private final RestTemplate restTemplate;
     private final PaymentRepository paymentRepository;
     private final UserPaymentRepository userPaymentRepository;
-    private final PaymentConverter paymentConverter;
+    private final KakaoPayConverter kakaoPayConverter;
     private final UserPaymentConverter userPaymentConverter;
     private final String secretKey;
     public KakaoPayServiceImpl(
@@ -47,7 +45,7 @@ public class KakaoPayServiceImpl implements PaymentService {
             @Value("${kakao.pay.failUrl}") String failUrl,
             PaymentRepository paymentRepository,
             UserPaymentRepository userPaymentRepository,
-            UserPaymentConverter paymentConverter,
+            KakaoPayConverter kakaoPayConverter,
             UserRepository userRepository
     ) {
         this.secretKey = secretKey;
@@ -55,7 +53,7 @@ public class KakaoPayServiceImpl implements PaymentService {
         this.userPaymentRepository = userPaymentRepository;
         this.restTemplate = new RestTemplate();
         this.userPaymentConverter = new UserPaymentConverter();
-        this.paymentConverter = new PaymentConverter(cid, approvalUrl, cancelUrl, failUrl, userRepository);
+        this.kakaoPayConverter = new KakaoPayConverter(cid, approvalUrl, cancelUrl, failUrl, userRepository);
     }
     private HttpHeaders createHeaders() {
         HttpHeaders headers = new HttpHeaders();
@@ -82,7 +80,7 @@ public class KakaoPayServiceImpl implements PaymentService {
 
     @Override
     public ApiResponse<ReadyResponse> preparePayment(PaymentRequest paymentRequest) {
-        Map<String, Object> parameters = paymentConverter.toPrepareParameters(paymentRequest);
+        Map<String, Object> parameters = kakaoPayConverter.toPrepareParameters(paymentRequest);
         ReadyResponse readyResponse = sendRequest(
                 "https://open-api.kakaopay.com/online/v1/payment/ready",
                 parameters,
@@ -90,7 +88,7 @@ public class KakaoPayServiceImpl implements PaymentService {
         );
 
         Optional.ofNullable(readyResponse).ifPresent(response -> {
-            Payment paymentEntity = paymentConverter.toEntity(paymentRequest, response);
+            Payment paymentEntity = kakaoPayConverter.toEntity(paymentRequest, response);
             savePaymentEntity(paymentEntity);
         });
 
@@ -102,7 +100,7 @@ public class KakaoPayServiceImpl implements PaymentService {
         Payment payment = findPaymentByTid(tid);
         ApproveResponse approveResponse = sendRequest(
                 "https://open-api.kakaopay.com/online/v1/payment/approve",
-                paymentConverter.toApproveParameters(payment, pgToken),
+                kakaoPayConverter.toApproveParameters(payment, pgToken),
                 ApproveResponse.class
         );
         Optional.ofNullable(approveResponse).ifPresent(response -> {
@@ -132,18 +130,6 @@ public class KakaoPayServiceImpl implements PaymentService {
         return ApiResponse.of(SuccessStatus.PAYMENT_APPROVE_SUCCESS, approveResponse);
     }
 
-    @Override
-    public ApiResponse<List<PaymentResponse>> getPaymentHistory(String userId) {
-        try {
-            List<PaymentResponse> paymentHistory = paymentRepository.findByUserId(userId).stream()
-                    .map(paymentConverter::toDto)
-                    .collect(Collectors.toList());
-            return ApiResponse.of(SuccessStatus.PAYMENT_HISTORY_SUCCESS, paymentHistory);
-        } catch (Exception e) {
-            logger.error("결제 내역 조회 중 오류 발생: {}", e.getMessage(), e);
-            throw new CustomException(ErrorStatus.PAYMENT_HISTORY_ERROR);
-        }
-    }
     private Payment findPaymentByTid(String tid) {
         return paymentRepository.findByTid(tid)
                 .orElseThrow(() -> new CustomException(ErrorStatus.PAYMENT_NOT_FOUND));

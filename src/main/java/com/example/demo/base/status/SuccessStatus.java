@@ -31,7 +31,6 @@ public enum SuccessStatus implements BaseCode {
     RAFFLE_UPLOAD_SUCCESS(HttpStatus.OK, "RAFFLE_2001", "래플 업로드에 성공하였습니다."),
     RAFFLE_FETCH_SUCCESS(HttpStatus.OK, "RAFFLE_2002", "래플 조회에 성공하였습니다."),
 
-
     // 5. HyungJin - 사진 관련 성공
     IMAGE_UPLOAD_SUCCESS(HttpStatus.OK, "IMAGE_2001", "사진 업로드에 성공하였습니다."),
 
@@ -43,9 +42,15 @@ public enum SuccessStatus implements BaseCode {
 
     // 7. Yoon - 유저 결제 관련 성공
     USER_PAYMENT_GET_TICKET(HttpStatus.OK, "USER_PAYMENT_2001", "유저의 현재 티켓 갯수가 성공적으로 조회되었습니다."),
-    USER_PAYMENT_UPDATE_BANK_INFO(HttpStatus.OK, "USER_PAYMENT_2002", "유저의 은행 정보가 성공적으로 업데이트되었습니다.")
+    USER_PAYMENT_UPDATE_BANK_INFO(HttpStatus.OK, "USER_PAYMENT_2002", "유저의 은행 정보가 성공적으로 업데이트되었습니다."),
+
+    // 8. Yoon - 결제 상세 관련 성공
+    EXCHANGE_HISTORY_SUCCESS(HttpStatus.OK, "USER_PAYMENT_2003", "유저의 티켓 환전 내역이 성공적으로 조회되었습니다."),
+    EXCHANGE_SUCCESS(HttpStatus.OK, "USER_PAYMENT_2004", "티켓 환전이 성공적으로 완료되었습니다.")
+
 
     ;
+
 
     private final HttpStatus httpStatus;
     private final String code;

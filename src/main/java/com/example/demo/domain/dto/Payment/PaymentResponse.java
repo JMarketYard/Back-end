@@ -2,19 +2,24 @@ package com.example.demo.domain.dto.Payment;
 
 import lombok.Getter;
 import lombok.Setter;
+
 import java.time.LocalDateTime;
+
 @Getter
 @Setter
 public class PaymentResponse {
-    private Long id;
-    private String userId;
-    private String orderId;
-    private String itemId;
-    private String itemName;
-    private int quantity;
-    private String tid;
-    private int amount;
-    private String status;
-    private LocalDateTime createdAt;
-    private LocalDateTime approvedAt;
+    private String paymentId; // 결제 ID
+    private LocalDateTime purchaseDate; // 구매 날짜
+    private int quantity; // 구매 수량
+    private String paymentMethod; // 결제 수단
+    private int amount; // 결제 금액
+
+    public PaymentResponse(Long paymentId, LocalDateTime purchaseDate, int quantity, String paymentMethod, int amount) {
+        this.paymentId = String.valueOf(paymentId);
+        this.purchaseDate = purchaseDate;
+        this.quantity = quantity;
+        this.paymentMethod = paymentMethod;
+        this.amount = amount;
+    }
+
 }

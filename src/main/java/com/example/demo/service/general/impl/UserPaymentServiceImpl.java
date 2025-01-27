@@ -6,7 +6,7 @@ import com.example.demo.base.status.ErrorStatus;
 import com.example.demo.base.status.SuccessStatus;
 import com.example.demo.domain.converter.UserPaymentConverter;
 import com.example.demo.domain.dto.Payment.*;
-import com.example.demo.entity.UserPayment;
+import com.example.demo.entity.base.Payment.UserPayment;
 import com.example.demo.repository.UserPaymentRepository;
 import com.example.demo.service.general.UserPaymentService;
 import org.springframework.stereotype.Service;
