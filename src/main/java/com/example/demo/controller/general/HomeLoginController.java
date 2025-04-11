@@ -4,6 +4,7 @@ import com.example.demo.base.ApiResponse;
 import com.example.demo.base.status.SuccessStatus;
 import com.example.demo.domain.dto.Home.HomeRaffleListDTO;
 import com.example.demo.domain.dto.Home.HomeResponseDTO;
+import com.example.demo.entity.base.enums.RaffleSortType;
 import com.example.demo.service.general.HomeService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -24,20 +25,26 @@ public class HomeLoginController {
     @GetMapping("")
     public ApiResponse<HomeResponseDTO> home(Authentication authentication,
                                              @RequestParam(defaultValue = "1") int page,
-                                             @RequestParam(defaultValue = "16") int size){
+                                             @RequestParam(defaultValue = "16") int size,
+                                             @RequestParam("raffleSortType") RaffleSortType raffleSortType,
+                                             @RequestParam("raffleNotEnded") Boolean raffleNotEnded){
+        int adjustedPage = Math.max(page - 1, 0);
         Long userId = Long.parseLong(authentication.getName());
-        HomeResponseDTO result =  homeService.getHomeLogin(userId, page, size);
+        HomeResponseDTO result =  homeService.getHomeLogin(userId, adjustedPage, size, raffleSortType, raffleNotEnded);
         return ApiResponse.of(SuccessStatus._OK, result);
     }
 
     @Operation(summary = "카테고리별 래플 조회")
     @GetMapping("/categories")
-    public ApiResponse<HomeRaffleListDTO> homeCategories(@RequestParam("categoryName") String categoryName,
+    public ApiResponse<HomeRaffleListDTO> homeCategories(@RequestParam("raffleSortType") RaffleSortType raffleSortType,
+                                                         @RequestParam("raffleNotEnded") Boolean raffleNotEnded,
+                                                         @RequestParam("categoryName") String categoryName,
                                                          @RequestParam(defaultValue = "1") int page,
                                                          @RequestParam(defaultValue = "16") int size,
                                                          Authentication authentication){
+        int adjustedPage = Math.max(page - 1, 0);
         Long userId = Long.parseLong(authentication.getName());
-        HomeRaffleListDTO result =  homeService.getHomeCategoriesLogin(categoryName, userId, page, size);
+        HomeRaffleListDTO result =  homeService.getHomeCategoriesLogin(categoryName, userId, adjustedPage, size, raffleSortType, raffleNotEnded);
         return ApiResponse.of(SuccessStatus._OK, result);
     }
 
@@ -46,8 +53,9 @@ public class HomeLoginController {
     public ApiResponse<HomeRaffleListDTO> homeApproaching(Authentication authentication,
                                                           @RequestParam(defaultValue = "1") int page,
                                                           @RequestParam(defaultValue = "16") int size){
+        int adjustedPage = Math.max(page-1,0);
         Long userId = Long.parseLong(authentication.getName());
-        HomeRaffleListDTO result =  homeService.getHomeApproachingLogin(userId, page, size);
+        HomeRaffleListDTO result =  homeService.getHomeApproachingLogin(userId, adjustedPage, size);
         return ApiResponse.of(SuccessStatus._OK, result);
     }
 
@@ -56,8 +64,9 @@ public class HomeLoginController {
     public ApiResponse<HomeRaffleListDTO> homeFollowingRaffles(Authentication authentication,
                                                                @RequestParam(defaultValue = "1") int page,
                                                                @RequestParam(defaultValue = "16") int size){
+        int adjustedPage = Math.max(page-1,0);
         Long userId = Long.parseLong(authentication.getName());
-        HomeRaffleListDTO result = homeService.getHomeFollowingRaffles(userId, page, size);
+        HomeRaffleListDTO result = homeService.getHomeFollowingRaffles(userId, adjustedPage, size);
         return ApiResponse.of(SuccessStatus._OK, result);
     }
 
@@ -65,9 +74,12 @@ public class HomeLoginController {
     @GetMapping("/more")
     public ApiResponse<HomeRaffleListDTO> homeMoreRaffles(Authentication authentication,
                                                           @RequestParam(defaultValue = "1") int page,
-                                                          @RequestParam(defaultValue = "16") int size){
+                                                          @RequestParam(defaultValue = "16") int size,
+                                                          @RequestParam("raffleSortType") RaffleSortType raffleSortType,
+                                                          @RequestParam("raffleNotEnded") Boolean raffleNotEnded){
+        int adjustedPage = Math.max(page-1,0);
         Long userId = Long.parseLong(authentication.getName());
-        HomeRaffleListDTO result =  homeService.getHomeMoreRafflesLogin(userId, page, size);
+        HomeRaffleListDTO result =  homeService.getHomeMoreRafflesLogin(userId, adjustedPage, size, raffleSortType, raffleNotEnded);
         return ApiResponse.of(SuccessStatus._OK, result);
     }
 
@@ -76,8 +88,9 @@ public class HomeLoginController {
     public ApiResponse<HomeRaffleListDTO> homeLikeRaffles(Authentication authentication,
                                                           @RequestParam(defaultValue = "1") int page,
                                                           @RequestParam(defaultValue = "16") int size){
+        int adjustedPage = Math.max(page-1,0);
         Long userId = Long.parseLong(authentication.getName());
-        HomeRaffleListDTO result = homeService.getHomeLikeRaffles(userId, page, size);
+        HomeRaffleListDTO result = homeService.getHomeLikeRaffles(userId, adjustedPage, size);
         return ApiResponse.of(SuccessStatus._OK, result);
     }
 

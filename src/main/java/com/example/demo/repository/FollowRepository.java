@@ -18,9 +18,4 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
     Optional<Follow> findByUserAndStoreId(User user, Long storeId);
 
     boolean existsByUserIdAndStoreId(Long userId, Long storeId);
-
-    @Query("SELECT r FROM Raffle r " +
-            "WHERE r.endAt > :now AND r.user.id IN (SELECT f.storeId FROM Follow f WHERE f.user.id = :userId) " +
-            "ORDER BY r.endAt ASC")
-    Page<Raffle> findRafflesByUserFollowings(@Param("userId") Long userId, @Param("now") LocalDateTime now, Pageable pageable);
 }

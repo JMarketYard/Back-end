@@ -4,6 +4,7 @@ import com.example.demo.base.ApiResponse;
 import com.example.demo.base.status.SuccessStatus;
 import com.example.demo.domain.dto.Home.HomeRaffleListDTO;
 import com.example.demo.domain.dto.Home.HomeResponseDTO;
+import com.example.demo.entity.base.enums.RaffleSortType;
 import com.example.demo.service.general.HomeService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -20,17 +21,24 @@ public class HomeController {
     @Operation(summary = "홈 화면 조회")
     @GetMapping("")
     public ApiResponse<HomeResponseDTO> home(@RequestParam(defaultValue = "1") int page,
-                                             @RequestParam(defaultValue = "16") int size){
-        HomeResponseDTO result = homeService.getHome(page, size);
+                                             @RequestParam(defaultValue = "16") int size,
+                                             @RequestParam("raffleSortType") RaffleSortType raffleSortType,
+                                             @RequestParam("raffleNotEnded") Boolean raffleNotEnded){
+        int adjustedPage = Math.max(page - 1, 0);
+        HomeResponseDTO result = homeService.getHome(adjustedPage, size, raffleSortType, raffleNotEnded);
         return ApiResponse.of(SuccessStatus._OK, result);
     }
 
     @Operation(summary = "카테고리별 래플 조회")
     @GetMapping("/categories")
-    public ApiResponse<HomeRaffleListDTO> homeCategories(@RequestParam("categoryName") String categoryName,
+    public ApiResponse<HomeRaffleListDTO> homeCategories(
+                                                         @RequestParam("categoryName") String categoryName,
                                                          @RequestParam(defaultValue = "1") int page,
-                                                         @RequestParam(defaultValue = "16") int size){
-        HomeRaffleListDTO result = homeService.getHomeCategories(categoryName, page, size);
+                                                         @RequestParam(defaultValue = "16") int size,
+                                                         @RequestParam("raffleSortType") RaffleSortType raffleSortType,
+                                                         @RequestParam("raffleNotEnded") Boolean raffleNotEnded){
+        int adjustedPage = Math.max(page-1,0);
+        HomeRaffleListDTO result = homeService.getHomeCategories(categoryName, adjustedPage, size, raffleSortType, raffleNotEnded);
         return ApiResponse.of(SuccessStatus._OK, result);
     }
 
@@ -40,7 +48,8 @@ public class HomeController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "16") int size
     ){
-        HomeRaffleListDTO result = homeService.getHomeApproaching(page, size);
+        int adjustedPage = Math.max(page-1,0);
+        HomeRaffleListDTO result = homeService.getHomeApproaching(adjustedPage, size);
         return ApiResponse.of(SuccessStatus._OK, result);
     }
 
@@ -48,8 +57,11 @@ public class HomeController {
     @Operation(summary = "래플 둘러보기")
     @GetMapping("/more")
     public ApiResponse<HomeRaffleListDTO> homeMoreRaffles(@RequestParam(defaultValue = "1") int page,
-                                                          @RequestParam(defaultValue = "16") int size){
-        HomeRaffleListDTO result = homeService.getHomeMoreRaffles(page, size);
+                                                          @RequestParam(defaultValue = "16") int size,
+                                                          @RequestParam("raffleSortType") RaffleSortType raffleSortType,
+                                                          @RequestParam("raffleNotEnded") Boolean raffleNotEnded){
+        int adjustedPage = Math.max(page-1,0);
+        HomeRaffleListDTO result = homeService.getHomeMoreRaffles(adjustedPage, size, raffleSortType, raffleNotEnded);
         return ApiResponse.of(SuccessStatus._OK, result);
     }
 

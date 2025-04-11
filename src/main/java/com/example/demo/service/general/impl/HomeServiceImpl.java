@@ -7,6 +7,7 @@ import com.example.demo.domain.converter.base.PageConverter;
 import com.example.demo.domain.dto.Home.*;
 import com.example.demo.domain.dto.base.PageInfo;
 import com.example.demo.entity.*;
+import com.example.demo.entity.base.enums.RaffleSortType;
 import com.example.demo.repository.*;
 import com.example.demo.service.general.HomeService;
 import lombok.RequiredArgsConstructor;
@@ -32,34 +33,31 @@ public class HomeServiceImpl implements HomeService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final LikeRepository likeRepository;
-    private final FollowRepository followRepository;
-
 
 
     @Override
-    public HomeResponseDTO getHome(int page, int size) {
+    public HomeResponseDTO getHome(int page, int size, RaffleSortType raffleSortType, Boolean raffleNotEnded) {
 
         // 마감임박인 래플 5개 조회
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime maxTime = now.plusHours(24);
         Pageable pageableApproaching = PageRequest.of(0, 16);
         Page<Raffle> approachingRaffles = raffleRepository.findRafflesEndingSoon(now, maxTime, pageableApproaching);
-        List<Raffle> rafflesSortedByEndAt = approachingRaffles.getContent().stream().limit(5).toList();
-        List<HomeRaffleDTO> rafflesSortedByEndAtDTO = convertToHomeRaffleDTOList(rafflesSortedByEndAt, null);
+        List<Raffle> rafflesSortedByEndingSoon = approachingRaffles.getContent().stream().limit(5).toList();
+        List<HomeRaffleDTO> rafflesSortedByEndAtDTO = convertToHomeRaffleDTOList(rafflesSortedByEndingSoon, null);
 
-        // 래플 둘러보기 -> 응모자순으로 래플 조회 (응모 안마감된것 우선, 로그인 안 했을 시)
+        // 래플 둘러보기 -> RaffleSortType 선택해서 정렬 (최신순, 응모자 많은 순, 마감임박순, 좋아요순)
         Pageable pageableMore = PageRequest.of(page, size);
-        Page<Raffle> moreRaffles = raffleRepository.findAllSortedByApply(now, pageableMore);
-        List<Raffle> rafflesSortedByApply = moreRaffles.getContent();
+        Page<Raffle> moreRaffles = raffleRepository.findRafflesWithSorting(pageableMore, raffleSortType, raffleNotEnded, null);
+        List<Raffle> rafflesSorted= moreRaffles.getContent();
+        List<HomeRaffleDTO> rafflesSortedDTO = convertToHomeRaffleDTOList(rafflesSorted, null);
 
-        List<HomeRaffleDTO> rafflesSortedByApplyListDTO = convertToHomeRaffleDTOList(rafflesSortedByApply, null);
         PageInfo pageInfo = PageConverter.toPageInfo(moreRaffles);
-
-        return getHomeResponseDTO(pageInfo, rafflesSortedByEndAtDTO, null, null, rafflesSortedByApplyListDTO);
+        return getHomeResponseDTO(pageInfo, rafflesSortedByEndAtDTO, null, null, rafflesSortedDTO);
     }
 
     @Override
-    public HomeResponseDTO getHomeLogin(Long userId, int page, int size){
+    public HomeResponseDTO getHomeLogin(Long userId, int page, int size, RaffleSortType raffleSortType, Boolean raffleNotEnded){
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorStatus.USER_NOT_FOUND));
@@ -73,40 +71,39 @@ public class HomeServiceImpl implements HomeService {
         List<HomeRaffleDTO> rafflesSortedByEndAtDTO = convertToHomeRaffleDTOList(rafflesSortedByEndAt, user);
 
 
-        // 내가 찜한 래플 5개 조회 ( 로그인 했을 시 기능 )
+        // 내가 찜한 래플 5개 조회 ( 내가 찜한 순, 로그인 했을 시 기능 )
         Pageable pageableForLike = PageRequest.of(0, 16);
-        Page<Raffle> pagedLikedRaffles = likeRepository.findRaffleByUserIdOrderByCreatedAtDesc(user.getId(), pageableForLike);
+        Page<Raffle> pagedLikedRaffles = raffleRepository.findMyLikeRaffles(user.getId(), pageableForLike);
         List<Raffle> likedRaffles = pagedLikedRaffles.getContent().stream().limit(5).toList();
         List<HomeRaffleDTO> myLikeRafflesDTO = convertToHomeRaffleDTOList(likedRaffles, user);
 
 
         // 내가 팔로우한 상점의 래플 5개 조회 (마감임박순, 로그인 했을 시 본인의 찜 여부도 전달)
         Pageable pageableForFollow = PageRequest.of(0,16);
-        Page<Raffle> pagedFollowingAllRaffles = followRepository.findRafflesByUserFollowings(userId,now, pageableForFollow);
+        Page<Raffle> pagedFollowingAllRaffles = raffleRepository.findRafflesByUserFollowings(userId,now, pageableForFollow);
         List<Raffle> myFollowRaffles = pagedFollowingAllRaffles.getContent().stream().limit(5).toList();
         List<HomeRaffleDTO> myFollowingRafflesDTO = convertToHomeRaffleDTOList(myFollowRaffles, user);
 
 
         // 래플 둘러보기 -> 응모자순으로 래플 조회 (응모 안마감된것 우선, 로그인 했을 시 찜 여부도 같이 전달)
         Pageable pageableMore = PageRequest.of(page, size);
-        Page<Raffle> moreRaffles = raffleRepository.findAllSortedByApply(now, pageableMore);
-        List<Raffle> rafflesSortedByApply = moreRaffles.getContent();
+        Page<Raffle> moreRaffles = raffleRepository.findRafflesWithSorting(pageableMore, raffleSortType, raffleNotEnded, null);
+        List<Raffle> rafflesSorted= moreRaffles.getContent();
+        List<HomeRaffleDTO> rafflesSortedDTO = convertToHomeRaffleDTOList(rafflesSorted, user);
 
-        List<HomeRaffleDTO> rafflesSortedByApplyListDTO = convertToHomeRaffleDTOList(rafflesSortedByApply, user);
         PageInfo pageInfo = PageConverter.toPageInfo(moreRaffles);
-
-        return getHomeResponseDTO(pageInfo, rafflesSortedByEndAtDTO, myLikeRafflesDTO, myFollowingRafflesDTO, rafflesSortedByApplyListDTO);
+        return getHomeResponseDTO(pageInfo, rafflesSortedByEndAtDTO, myLikeRafflesDTO, myFollowingRafflesDTO, rafflesSortedDTO);
     }
 
 
     @Override
-    public HomeRaffleListDTO getHomeCategories(String categoryName, int page, int size) {
+    public HomeRaffleListDTO getHomeCategories(String categoryName, int page, int size, RaffleSortType raffleSortType, Boolean raffleNotEnded) {
 
         Category category = categoryRepository.findByName(categoryName)
                 .orElseThrow(() -> new CustomException(ErrorStatus.COMMON_WRONG_PARAMETER));
 
-        Pageable pageable = PageRequest.of(page-1, size);
-        Page<Raffle> pagedRaffles = raffleRepository.findByCategoryNameSortedByApply(category.getName(), pageable);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Raffle> pagedRaffles = raffleRepository.findRafflesWithSorting(pageable, raffleSortType, raffleNotEnded, category.getName());
 
         // 카테고리별 조회 + 응모자순으로 래플 조회 (응모 안마감된것 우선)
         List<HomeRaffleDTO> result = convertToHomeRaffleDTOList(pagedRaffles.getContent(), null);
@@ -116,7 +113,7 @@ public class HomeServiceImpl implements HomeService {
     }
 
     @Override
-    public HomeRaffleListDTO getHomeCategoriesLogin(String categoryName, Long userId, int page, int size) {
+    public HomeRaffleListDTO getHomeCategoriesLogin(String categoryName, Long userId, int page, int size, RaffleSortType raffleSortType, Boolean raffleNotEnded) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorStatus.USER_NOT_FOUND));
@@ -124,8 +121,8 @@ public class HomeServiceImpl implements HomeService {
         Category category = categoryRepository.findByName(categoryName)
                 .orElseThrow(() -> new CustomException(ErrorStatus.COMMON_WRONG_PARAMETER));
 
-        Pageable pageable = PageRequest.of(page-1, size);
-        Page<Raffle> pagedRaffles = raffleRepository.findByCategoryNameSortedByApply(category.getName(), pageable);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Raffle> pagedRaffles = raffleRepository.findRafflesWithSorting(pageable, raffleSortType, raffleNotEnded, category.getName());
 
         // 카테고리별 조회 + 응모자순으로 래플 조회 (응모 안마감된것 우선)
         List<HomeRaffleDTO> result = convertToHomeRaffleDTOList(pagedRaffles.getContent(), user);
@@ -138,7 +135,7 @@ public class HomeServiceImpl implements HomeService {
     public HomeRaffleListDTO getHomeApproaching(int page, int size) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime maxTime = now.plusHours(24);
-        Pageable pageable = PageRequest.of(page - 1, size);
+        Pageable pageable = PageRequest.of(page, size);
         Page<Raffle> pagedRafflesSortedByEndAt = raffleRepository.findRafflesEndingSoon(now, maxTime, pageable);
         List<Raffle> rafflesSortedByEndAt = pagedRafflesSortedByEndAt.getContent();
 
@@ -157,7 +154,7 @@ public class HomeServiceImpl implements HomeService {
         // 마감임박인 래플 더보기 조회
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime maxTime = now.plusHours(24);
-        Pageable pageable = PageRequest.of(page - 1, size);
+        Pageable pageable = PageRequest.of(page, size);
         Page<Raffle> pagedRafflesSortedByEndAt = raffleRepository.findRafflesEndingSoon(now, maxTime, pageable);
         List<Raffle> rafflesSortedByEndAt = pagedRafflesSortedByEndAt.getContent();
 
@@ -175,8 +172,8 @@ public class HomeServiceImpl implements HomeService {
                 .orElseThrow(() -> new CustomException(ErrorStatus.USER_NOT_FOUND));
 
         LocalDateTime now = LocalDateTime.now();
-        Pageable pageable = PageRequest.of(page-1, size);
-        Page<Raffle> pagedFollowingAllRaffles = followRepository.findRafflesByUserFollowings(userId, now, pageable);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Raffle> pagedFollowingAllRaffles = raffleRepository.findRafflesByUserFollowings(userId, now, pageable);
         List<Raffle> myFollowRaffles = pagedFollowingAllRaffles.getContent();
 
         List<HomeRaffleDTO> myFollowingRafflesDTO = convertToHomeRaffleDTOList(myFollowRaffles, user);
@@ -186,33 +183,29 @@ public class HomeServiceImpl implements HomeService {
     }
 
     @Override
-    public HomeRaffleListDTO getHomeMoreRaffles(int page, int size) {
-        LocalDateTime now = LocalDateTime.now();
-        Pageable pageable = PageRequest.of(page - 1, size);
-        Page<Raffle> pagedRafflesSortedByApply = raffleRepository.findAllSortedByApply(now, pageable);
-        List<Raffle> rafflesSortedByApply = pagedRafflesSortedByApply.getContent();
+    public HomeRaffleListDTO getHomeMoreRaffles(int page, int size, RaffleSortType raffleSortType, Boolean raffleNotEnded) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Raffle> pagedRafflesSorted = raffleRepository.findRafflesWithSorting(pageable, raffleSortType, raffleNotEnded, null);
+        List<Raffle> rafflesSorted = pagedRafflesSorted.getContent();
+        List<HomeRaffleDTO> rafflesSortedDTO = convertToHomeRaffleDTOList(rafflesSorted, null);
 
-        List<HomeRaffleDTO> rafflesSortedByApplyListDTO = convertToHomeRaffleDTOList(rafflesSortedByApply, null);
-        PageInfo pageInfo = PageConverter.toPageInfo(pagedRafflesSortedByApply);
-
-        return HomeConverter.toHomeRaffleListDTO(rafflesSortedByApplyListDTO, pageInfo);
+        PageInfo pageInfo = PageConverter.toPageInfo(pagedRafflesSorted);
+        return HomeConverter.toHomeRaffleListDTO(rafflesSortedDTO, pageInfo);
     }
 
     @Override
-    public HomeRaffleListDTO getHomeMoreRafflesLogin(Long userId, int page, int size) {
+    public HomeRaffleListDTO getHomeMoreRafflesLogin(Long userId, int page, int size, RaffleSortType raffleSortType, Boolean raffleNotEnded) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorStatus.USER_NOT_FOUND));
 
-        LocalDateTime now = LocalDateTime.now();
-        Pageable pageable = PageRequest.of(page - 1, size);
-        Page<Raffle> pagedRafflesSortedByApply = raffleRepository.findAllSortedByApply(now, pageable);
-        List<Raffle> rafflesSortedByApply = pagedRafflesSortedByApply.getContent();
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Raffle> pagedRafflesSorted = raffleRepository.findRafflesWithSorting(pageable, raffleSortType, raffleNotEnded, null);
+        List<Raffle> rafflesSorted = pagedRafflesSorted.getContent();
+        List<HomeRaffleDTO> rafflesSortedDTO = convertToHomeRaffleDTOList(rafflesSorted, user);
 
-        List<HomeRaffleDTO> rafflesSortedByApplyListDTO = convertToHomeRaffleDTOList(rafflesSortedByApply, user);
-        PageInfo pageInfo = PageConverter.toPageInfo(pagedRafflesSortedByApply);
-
-        return HomeConverter.toHomeRaffleListDTO(rafflesSortedByApplyListDTO, pageInfo);
+        PageInfo pageInfo = PageConverter.toPageInfo(pagedRafflesSorted);
+        return HomeConverter.toHomeRaffleListDTO(rafflesSortedDTO, pageInfo);
     }
 
     @Override
@@ -221,8 +214,8 @@ public class HomeServiceImpl implements HomeService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorStatus.USER_NOT_FOUND));
 
-        Pageable pageable = PageRequest.of(page-1, size);
-        Page<Raffle> pagedLikedRaffles = likeRepository.findRaffleByUserIdOrderByCreatedAtDesc(user.getId(), pageable);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Raffle> pagedLikedRaffles = raffleRepository.findMyLikeRaffles(user.getId(), pageable);
         List<Raffle> likedRaffles = pagedLikedRaffles.getContent();
 
         List<HomeRaffleDTO> myLikeRafflesDTO = convertToHomeRaffleDTOList(likedRaffles, user);

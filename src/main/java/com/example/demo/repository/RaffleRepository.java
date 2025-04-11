@@ -11,7 +11,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public interface RaffleRepository extends JpaRepository<Raffle, Long> {
+public interface RaffleRepository extends JpaRepository<Raffle, Long>, RaffleQueryDslRepository {
 
     @Query("SELECT r FROM Raffle r " +
             "LEFT JOIN Apply a ON r.id = a.raffle.id " +
@@ -52,17 +52,14 @@ public interface RaffleRepository extends JpaRepository<Raffle, Long> {
     @Query("SELECT r FROM Raffle r WHERE r.endAt BETWEEN :now AND :maxTime ORDER BY r.endAt ASC")
     Page<Raffle> findRafflesEndingSoon(@Param("now") LocalDateTime now, @Param("maxTime") LocalDateTime maxTime, Pageable pageable);
 
+    // 내가 찜한 래플 조회(내가 찜한 순으로, createdAt순)
+    @Query("SELECT l.raffle FROM Like l WHERE l.user.id = :userId ORDER BY l.createdAt DESC")
+    Page<Raffle> findMyLikeRaffles(@Param("userId") Long userId, Pageable pageable);
 
-    // 응모자순 래플 조회(응모가 안마감된 것들 우선으로)
-    @Query(
-            value = "SELECT r FROM Raffle r " +
-                    "LEFT JOIN Apply a ON r.id = a.raffle.id " +
-                    "GROUP BY r " +
-                    "ORDER BY " +
-                    "CASE WHEN r.endAt > :now THEN 1 ELSE 2 END, " +
-                    "COUNT(a) DESC",
-            countQuery = "SELECT COUNT(DISTINCT r) FROM Raffle r"
-    )
-    Page<Raffle> findAllSortedByApply(@Param("now") LocalDateTime now, Pageable pageable);
+    // 내가 팔로우한 상점의 래플 조회
+    @Query("SELECT r FROM Raffle r " +
+            "WHERE r.endAt > :now AND r.user.id IN (SELECT f.storeId FROM Follow f WHERE f.user.id = :userId) " +
+            "ORDER BY r.endAt ASC")
+    Page<Raffle> findRafflesByUserFollowings(@Param("userId") Long userId, @Param("now") LocalDateTime now, Pageable pageable);
 
 }
