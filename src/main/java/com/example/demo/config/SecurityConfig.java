@@ -28,7 +28,7 @@ public class SecurityConfig {
 
     private final JWTUtil jwtUtil;
 
-    // 소셜 로그인
+    // 소셜 로그인!
     private final OAuthLoginSuccessHandler oAuthLoginSuccessHandler;
     private final OAuthLoginFailureHandler oAuthLoginFailureHandler;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
