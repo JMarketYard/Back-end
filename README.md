@@ -34,5 +34,7 @@
 
 ## 기여 가이드 (Contributing)
 - 브랜치 전략: Git-flow
-- 코드 스타일:
-- PR 규칙:
+<img width="990" height="579" alt="image" src="https://github.com/user-attachments/assets/61757fcc-4d7d-427b-b5f8-0eeac077f26d" />
+
+- 코드 스타일: https://complex-tortellini-81e.notion.site/272278745f71801baa6deaf49f569ef2?source=copy_link
+- PR/ISSUE/COMMIT 규칙: https://complex-tortellini-81e.notion.site/GitHub-PR-ISSUE-COMMIT-272278745f71805ba7d9ffd099382166?source=copy_link
